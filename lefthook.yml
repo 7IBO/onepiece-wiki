@@ -20,3 +20,5 @@ commit-msg:
   commands:
     commitlint:
       run: bun x commitlint --edit {1}
+    attribution:
+      run: bun scripts/check-attribution.ts {1}
