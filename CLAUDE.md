@@ -1,5 +1,11 @@
 # Claude Code Instructions — One Piece Wiki
 
+> Shared rules first: read [7IBO/socle](https://github.com/7IBO/socle)
+> (`CLAUDE.md`, then the file of the topic at hand: git, PR, review, CI,
+> Linear). This file keeps only what is specific to this app and wins where
+> the two differ. No credit to Claude or Anthropic anywhere (commits, PR,
+> branches). Marketing lives in 7IBO/marketing.
+
 This file is read by Claude Code at the start of every session. It defines the
 project's hard rules. Do not deviate from them without explicit human approval.
 

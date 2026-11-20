@@ -10,9 +10,9 @@ on:
   # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  # Scans `main` on every push to track the health-score trend and catch regressions that slipped past PR review.
-  push:
-    branches: ["main"]
+  # No scan on a push to main: CI minutes are shared between apps
+  # (7IBO/socle, code/ci-cd.md). The full-repo trend runs in a session
+  # with `bun run doctor`.
 
 permissions:
   contents: read
@@ -27,6 +27,7 @@ concurrency:
 
 jobs:
   react-doctor:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

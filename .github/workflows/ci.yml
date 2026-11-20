@@ -1,8 +1,9 @@
 name: CI
 
+# Pull requests only, never a push to main: main is checked by the pull
+# request that changes it (7IBO/socle, code/ci-cd.md). A draft runs
+# nothing; the run starts when the pull request is marked ready.
 on:
-  push:
-    branches: [main]
   # No `branches:` filter on pull_request — CI must run on EVERY pull
   # request, not only those targeting main. With the filter, a stacked
   # PR (B based on A, C based on B) and an import PR based on a feature
@@ -10,6 +11,7 @@ on:
   # green tick built entirely from advisory checks. A PR that cannot
   # fail is not a reviewed PR.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -21,11 +23,14 @@ concurrency:
 jobs:
   ci:
     name: Lint, typecheck, validate, test
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -34,6 +39,27 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      # No credit to an AI assistant in the title, body, branch or commits
+      # (7IBO/socle, rule 1). Values go through env, never inline.
+      - name: Attribution check
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.head_ref }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bun scripts/check-attribution.ts --text "$TITLE"
+          bun scripts/check-attribution.ts --branch "$BRANCH"
+          printf '%s' "$BODY" > "$RUNNER_TEMP/body.md"
+          bun scripts/check-attribution.ts "$RUNNER_TEMP/body.md"
+          status=0
+          for sha in $(git rev-list "$BASE..$HEAD"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/message.txt"
+            bun scripts/check-attribution.ts "$RUNNER_TEMP/message.txt" || { echo "in commit $sha"; status=1; }
+          done
+          exit $status
 
       - name: Format check
         run: bun run format:check
